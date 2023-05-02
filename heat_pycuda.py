@@ -5,7 +5,6 @@ import numpy as np
 
 # Define the kernel function
 mod = SourceModule("""
-    /* Update the temperature values using five-point stencil */
     __global__ void evolve_kernel(double* u, double* u_previous,
                                   double a, double dt, double dx2, double dy2,
                                   int nx, int ny) {
