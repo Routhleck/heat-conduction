@@ -3,23 +3,23 @@
 Example implementations of two dimensional heat equation with various parallel programming approaches.
 
 Heat (or diffusion) equation is
-
-[![img](https://github.com/cschpc/heat-equation/raw/main/images/heat_equation.png)](https://github.com/cschpc/heat-equation/blob/main/images/heat_equation.png)
-
+$$
+\frac{\partial u}{\partial t} = \alpha \nabla ^2u
+$$
 where **u(x, y, t)** is the temperature field that varies in space and time, and α is thermal diffusivity constant. The two dimensional Laplacian can be discretized with finite differences as
-
-[![img](https://github.com/cschpc/heat-equation/raw/main/images/laplacian.png)](https://github.com/cschpc/heat-equation/blob/main/images/laplacian.png)
-
+$$
+\nabla^2 u  &= \frac{u(i-1,j)-2u(i,j)+u(i+1,j)}{(\Delta x)^2} \\
+ &+ \frac{u(i,j-1)-2u(i,j)+u(i,j+1)}{(\Delta y)^2}
+$$
 Given an initial condition (u(t=0) = u0) one can follow the time dependence of the temperature field with explicit time evolution method:
-
-[![img](https://github.com/cschpc/heat-equation/raw/main/images/time_dependence.png)](https://github.com/cschpc/heat-equation/blob/main/images/time_dependence.png)
-
+$$
+u^{m+1}(i,j) = u^m(i,j) + \Delta t \alpha \nabla^2 u^m(i,j)
+$$
 Note: Algorithm is stable only when
-
-[![img](https://github.com/cschpc/heat-equation/raw/main/images/stability.png)](https://github.com/cschpc/heat-equation/blob/main/images/stability.png)
-
-#### 
- 
+$$
+\Delta t < \frac{1}{2 \alpha} \frac{(\Delta x \Delta y)^2}{(\Delta x)^2
+ (\Delta y)^2}
+$$
 ![example](images/example.png)
 
 ## 开发环境
