@@ -536,8 +536,6 @@ train_set.groupby('hour').agg({'click':'sum'}).plot(figsize=(10,6))
 ```
 ![](https://imgs.xiedaimala.com/98sugTWNpycmGcyRrwev9znOW24Off6x/hours_figure.jpg)<!-- .element: style="height:350px" -->   
 
-显而易见，广告投放的时间段对广告的点击率有较大影响。在19：00-5：00时间段投放的广告点击率较低，而在中午时间段投放的广告点击率最高。
-
 ### 特征类型的判定
 
 ```python
@@ -571,40 +569,268 @@ C21                 int64
 dtypes: int64(14), object(9)
 ```
 
-````
-![](https://imgs.xiedaimala.com/TGNRSUl205ljLfaQsmBA8jQUKjcQIgjv/hour_figure.jpg)<!-- .element: style="height:300px" -->   
+### 查看各个特征的可能取值个数
 
-显而易见，广告投放的时间段对广告的点击率有较大影响。在19：00-5：00时间段投放的广告点击率较低，而在中午时间段投放的广告点击率最高。
-
-### 特征类型的判定
+对于int 类型的特征，我们可以通过value_count来查看每个特征的取值情况，通过len函数来查看各个特征的可能取值个数。
 
 ```python
-train_set.info()
-<class 'pandas.core.frame.DataFrame'>
-Int64Index: 8085793 entries, 373315 to 40393381
-Data columns (total 23 columns):
-click               int64
-hour                int64
-C1                  int64
-banner_pos          int64
-site_id             object
-site_domain         object
-site_category       object
-app_id              object
-app_domain          object
-app_category        object
-device_id           object
-device_ip           object
-device_model        object
-device_type         int64
-device_conn_type    int64
-C14                 int64
-C15                 int64
-C16                 int64
-C17                 int64
-C18                 int64
-C19                 int64
-C20                 int64
-C21                 int64
-dtypes: int64(14), object(9)
+len_of_feature_count = []
+for i in train_set.columns[2:23].tolist():
+    print(i, ':', len(train_set[i].astype(str).value_counts()))
+    len_of_feature_count.append(len(train_set[i].astype(str).value_counts()))
 ```
+
+```
+C1 : 7
+banner_pos : 7
+site_id : 3822
+site_domain : 5151
+site_category : 24
+app_id : 5914
+app_domain : 382
+app_category : 30
+device_id : 872531
+device_ip : 2650597
+device_model : 6922
+device_type : 5
+device_conn_type : 4
+C14 : 2503
+C15 : 8
+C16 : 9
+C17 : 431
+C18 : 4
+C19 : 67
+C20 : 169
+C21 : 60
+```
+### 把int看作str类型
+
+```python
+// 需要更改为str类型的特征
+feature_tran_str = train_set.columns[2:4].tolist() + train_set.columns[13:23].tolist()
+
+// 将特征类型转变为str类型
+for feature in feature_tran_str:
+    train_set[feature] = train_set[feature].astype(str)
+```
+
+### 特征取值的限制
+
+同时，可以发现，一些特征的可能取值个数特别多，有上百万个可能取值，这无疑对接下来的建模预测造成麻烦。所以在此将每个属性的可能取值个数进行限制，一旦取值个数超过10，则进行以下操作： 计算每个取值对于点击率的影响程度，将这种程度作为新的属性取值。即依据属性的点击率区分为10个档次，分别取 0，1，2，3，4，5，6，7，8，9。数值越高代表其点击率越高。
+
+```python
+need_clean_features = []
+for i in range(len(len_of_feature_count)):
+    if len_of_feature_count[i] > 10:
+        need_clean_features.append(train_set.columns[2:23].tolist()[i])
+
+need_clean_features
+```
+
+### 点击率与对应的取值之间的关系
+
+![](https://imgs.xiedaimala.com/L46k21rNzQB4zerJEE12pGWjsi6q6Sf2/value.png)<!-- .element: style="height:400px" -->   
+
+### 平均点击率
+
+```python
+// 获得数据集的平均点击率
+mid_click_rate = train_set.describe().loc['mean','click']
+print("平均点击率为：", mid_click_rate)
+```
+平均点击率为： 0.170001
+
+### 为上述需要变动的值进行转换
+
+```python
+rate_0 = mid_click_rate-0.04
+rate_1 = mid_click_rate-0.03
+rate_2 = mid_click_rate-0.02
+rate_3 = mid_click_rate-0.01
+rate_4 = mid_click_rate
+rate_5 = mid_click_rate+0.01
+rate_6 = mid_click_rate+0.02
+rate_7 = mid_click_rate+0.03
+rate_8 = mid_click_rate+0.04
+
+// 定义一个函数用于执行特征取值点击率与新取值之间的映射关系
+def obj_clean(X):
+
+    // 用于取得点击率的函数
+    def get_click_rate(x):
+        temp = train_set[train_set[X.columns[0]] == x]
+        result = round((temp.click.sum() / temp.click.count()), 3)
+        return result
+    
+    // 获取属性新取值的函数
+    def get_type(V, str):
+        type_.append(V[V[str] <= rate_0].index.tolist())
+        type_.append(V[(V[str] > rate_0) & (V[str] <= rate_1)].index.tolist())
+        type_.append(V[(V[str] > rate_1) & (V[str] <= rate_2)].index.tolist())
+        type_.append(V[(V[str] > rate_2) & (V[str] <= rate_3)].index.tolist())
+        type_.append(V[(V[str] > rate_3) & (V[str] <= rate_4)].index.tolist())
+        type_.append(V[(V[str] > rate_4) & (V[str] <= rate_5)].index.tolist())
+        type_.append(V[(V[str] > rate_5) & (V[str] <= rate_6)].index.tolist())
+        type_.append(V[(V[str] > rate_6) & (V[str] <= rate_7)].index.tolist())
+        type_.append(V[(V[str] > rate_7) & (V[str] <= rate_8)].index.tolist())
+        type_.append(V[V[str] > rate_8].index.tolist())
+    
+    // 根据属性的点击率，返回转换后的属性取值
+    def clean(x):
+        for i in range(10):
+            if x in type_[i]:
+                return str(i)
+        return str(5)
+    
+    // obj_clean从此开始执行
+    print('执行：', X.columns[0])
+    # 频率列表
+    frequence = X[X.columns[0]].value_counts()
+    
+    // 理论上，所有属性的频率都被映射到这10个取值中，可得到最佳效果
+    // 但是，为了节约执行时间，舍去频率排名低于1000的取值
+    if len(frequence) > 1000:
+        frequence = frequence[:1000]
+
+    frequence = pandas.DataFrame(frequence)
+    frequence['new_column'] = frequence.index
+    // 调用get_click_rate函数
+    frequence['click_rate'] = frequence.new_column.apply(get_click_rate)
+
+    type_ = []
+    get_type(frequence, 'click_rate')
+
+    // 返回转换结果
+    return X[X.columns[0]].apply(clean)
+
+// 对每个属性执行函数
+for i in need_clean_features:
+    train_set[[i]] = obj_clean(train_set[[i]])
+```
+
+### 删除无用特征
+
+对数据进行上述处理之后，还需要确认每个特征的取值对用户是否有影响。
+
+对于那些只有一个取值的特征，应该删除
+
+```python
+// 确认所有特征的取值情况以及对应的点击广告情况
+import seaborn as sns
+for i in train_set.columns:
+    sns.countplot(x = i, hue="click", data=train_set)
+    plt.show()
+```
+
+### device_id属性可近似看作只有一种value
+
+![](https://imgs.xiedaimala.com/GzFmhynWTTS2eptnia5OxJdwb9CdapMT/device_id.png)<!-- .element: style="height:400px" -->   
+
+### 独热编码
+
+```python
+'''
+独热编码的优点
+在回归，分类，聚类等机器学习算法中，特征之间距离的计算或相似度的计算是非常重要的，而我们常用的距离或相似度的计算都是在欧式空间的相似度计算，计算余弦相似性，基于的就是欧式空间。
+而我们使用one-hot编码，将离散特征的取值扩展到了欧式空间，离散特征的某个取值就对应欧式空间的某个点。
+将离散型特征使用one-hot编码，确实会让特征之间的距离计算更加合理。
+'''
+
+// 对所有特征进行独热编码
+train_set = pandas.get_dummies(train_set)
+
+// 将处理过后的数据集导出
+train_set.to_csv('./work/DataSet/new_train.csv', index=False)
+```
+
+## 建模与预测
+
+### 平衡正反标签
+
+资料集十分庞大，而且正向标签仅占全部资料的17%左右，为了缩短决策树的时间，从负向标签的资料中取样，与正向标签的资料拼成一份各占50%的资料集，来平衡权重问题。
+
+### 划分特征与分类变量
+
+```python
+// 平衡正反标签
+pre_X = train_set[train_set['click'] == 0].sample(n=len(train_set[train_set['click'] == 1]), random_state=111)
+
+// 合并正反标签的数据
+pre_X = pandas.concat([pre_X, train_set[train_set['click'] == 1]]).sample(frac=1)
+
+// 特征和分类变量的划分
+pre_y = pre_X[['click']]  # 特征
+pre_X.drop(['click'], axis=1, inplace=True)  # 分类变量
+```
+
+### 将数据集划分为训练集与测试集
+
+训练集占比为80%， 测试集占比为20%
+```python
+from sklearn.model_selection import train_test_split
+train_X, test_X, train_y, test_y = train_test_split(pre_X, pre_y,test_size=0.20)
+```
+
+### xgboost进行建模
+
+```python
+raw_model = xgb.XGBClassifier()
+model.fit(train_X,train_y.values.ravel())
+y_pred = model.predict(test_X)
+accuracy_score(test_y, y_pred)
+```
+未进行调参的模型准确度`0.780527`
+
+### Grid Search调参
+
+```
+'''
+n_estimators：弱学习器的数量
+gamma：默认是0，别名是 min_split_loss，在节点分裂时，只有在分裂后损失函数的值下降了（达到gamma指定的阈值），才会分裂这个节点。gamma值越大，算法越保守（越不容易过拟合）；[0，∞]
+max_depth：默认是6，树的最大深度，值越大，越容易过拟合；[0，∞]
+'''
+// n_estimators
+cv_params = {'n_estimators': numpy.linspace(100, 1000, 10, dtype=int)}
+regress_model = xgb.XGBRegressor()
+gs = GridSearchCV(regress_model, cv_params, verbose=2, refit=True, cv=5, n_jobs=-1)
+gs.fit(train_X, train_y) 
+// 性能测评
+print("参数的最佳取值：", gs.best_params_)
+print("最佳模型得分:", gs.best_score_)
+>>> 参数的最佳取值：: {'n_estimators': 100}
+>>> 最佳模型得分: 0.1448992153955665
+
+// gamma
+cv_params = {'gamma': numpy.linspace(0, 1, 10)}
+regress_model = xgb.XGBRegressor()
+gs = GridSearchCV(regress_model, cv_params, verbose=2, refit=True, cv=5, n_jobs=-1)
+gs.fit(train_X, train_y) 
+// 性能测评
+print("参数的最佳取值：", gs.best_params_)
+print("最佳模型得分:", gs.best_score_)
+>>> 参数的最佳取值： {'gamma': 1.0}
+>>> 最佳模型得分: 0.1810817949977097
+
+// max_depth
+cv_params = {"max_depth":range(1,20)}
+regress_model = xgb.XGBRegressor()
+gs = GridSearchCV(regress_model, cv_params, verbose=2, refit=True, cv=5, n_jobs=-1)
+gs.fit(train_X, train_y)
+// 性能测评
+print("参数的最佳取值：", gs.best_params_)
+print("最佳模型得分:", gs.best_score_)
+
+>>> 参数的最佳取值： {'max_depth': 2}
+>>> 最佳模型得分: 0.180575252255935
+```
+
+### 最佳参数
+可以看到，最佳参数为{'n_estimators':100, 'gamma': 1.0,'max_depth': 2}
+```
+// 使用xgboost 建模，并指定先前调参得到的最佳参数
+model = XGBClassifier(n_estimators=100, gamma=1.0, max_depth=2)
+model.fit(train_X,train_y.values.ravel())
+y_pred = model.predict(test_X)
+accuracy_score(test_y, y_pred)
+```
+正确率:0.814047
