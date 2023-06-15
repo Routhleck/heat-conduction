@@ -189,7 +189,7 @@ def main():
     local_field[1:-1, :] = buff  # copy data to non-ghost rows
     local_field0 = np.zeros_like(local_field)  # array for previous time step
 
-    # Fix outer boundary ghost layers to account for aperiodicity?
+    # Fix outer boundary ghost layers to account for periodicity?
     if True:
         if rank == 0:
             local_field[0, :] = local_field[1, :]
