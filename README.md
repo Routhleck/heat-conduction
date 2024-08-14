@@ -34,18 +34,18 @@ $$
 
 ### hardware
 
-CPU: Intel Core i5-12490F 6C12T
-GPU: RTX 2070 8G
-RAM: 32G DDR4 3200MHz
+- CPU: Intel Core i5-12490F 6C12T
+- GPU: RTX 2070 8G
+- RAM: 32G DDR4 3200MHz
 
 ### software
 
-Python: Miniconda python3.8
-Mpi4py: 3.1.4
-pycuda: 2022.1+cuda116
-Nvidia CUDA toolkit: 11.6
-Nvidia SMI: 531.41
-CUDA: 12.1
+- Python: Miniconda python3.8
+- Mpi4py: 3.1.4
+- pycuda: 2022.1+cuda116
+- Nvidia CUDA toolkit: 11.6
+- Nvidia SMI: 531.41
+- CUDA: 12.1
 
 ## Code instruction
 
