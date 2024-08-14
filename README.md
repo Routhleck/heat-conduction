@@ -34,7 +34,7 @@ $$
 
 ### hardware
 
-CPU: Intel Core i5-10490F 6C12T
+CPU: Intel Core i5-12490F 6C12T
 GPU: RTX 2070 8G
 RAM: 32G DDR4 3200MHz
 
