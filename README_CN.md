@@ -9,7 +9,7 @@ Example implementations of two dimensional heat equation with various parallel p
 
 ### 硬件
 
-CPU: Intel Core i5-10490F 6C12T
+CPU: Intel Core i5-12490F 6C12T
 
 GPU: RTX 2070 8G
 
